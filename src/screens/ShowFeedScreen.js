@@ -1,30 +1,34 @@
 import React, { useContext, useEffect } from 'react';
-import { View, Text, StyleSheet, Button, Image, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Button, Image, FlatList, TouchableOpacity, Linking } from 'react-native';
 //import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import { Context as FeedListContext } from '../context/FeedListContext'
 import { Context as FeedContext } from '../context/FeedContext'
+import { Feather, EvilIcons } from '@expo/vector-icons';
 import moment from 'moment';
-
 
 const ShowFeedScreen = ({ route, navigation }) => {
 
+    moment.locale('pt-br');
     const feedListContext = useContext(FeedListContext);
     const feedID = route.params.id;
     //console.log(feedID);
     const feed = feedListContext.state.find((feed) => feed.urlFeed === feedID);
     //console.log(feed);
-    const { state, fetchItems } = useContext(FeedContext);
+    const { state, fetchItems, restoreState, deleteItem } = useContext(FeedContext);
     
     useEffect(() => {
+        //restoreState();
         fetchItems(feed.urlFeed);
     }, []);
 
     const abrirLink = (link) => {
-        console.log('implementar, mandar o usuário para o link da notícia (item.link)');
+        //console.log('implementar, mandar o usuário para o link da notícia (item.link)');
+        Linking.openURL(link);
     }
 
     return (
         <>
+            <Text>{feedID}</Text>
             <FlatList
                 data={state}
                 keyExtractor={(item) => item.link}
@@ -33,23 +37,30 @@ const ShowFeedScreen = ({ route, navigation }) => {
                     // (pode cortar em 100 ou 200 caracteres para não ficar muito grande), e imagem (caso tenha)
                     // ao clicar em uma notícia, devemos chamar a função abrirLink que direciona o usuário para o link da notícia
                     return (
-                        <TouchableOpacity onPress={() => navigation.navigate('', {})}>
-                        <View style={styles.row}>                            
-                                <Text style={styles.title}>{item.title}</Text>
-                            
-                            <Text 
-                                numberOfLines={1} 
-                                ellipsizeMode="tail" 
-                                style={styles.description}>
-                                    {item.description}
-                            </Text>
-                            
-                            <Text style={styles.pubDate}>{item.pubDate}</Text>
-                            <Text style={styles.pubDate}>{moment(item.pubDate).format('DD/MM/YYYY')}</Text>
-                            <Text style={styles.pubDate}>{moment(item.pubDate).format('DD/MM/YYYY, H:mm:ss')}</Text>
-                        </View>
-                        </TouchableOpacity>
-
+                        <View style={styles.container}>                            
+                            <View style={styles.row}>                            
+                                {/* <Text style={styles.title}>{item.link}</Text> */}
+                                <TouchableOpacity onPress={() => { abrirLink(item.link) }}>
+                                    <Text style={styles.title}>{item.title}</Text>
+                                </TouchableOpacity>
+                                    
+                                <Text 
+                                    numberOfLines={1} 
+                                    ellipsizeMode="tail" 
+                                    //style={styles.description}
+                                >
+                                        {item.description}
+                                </Text>
+                                
+                                <Text style={styles.pubDate}>{moment(item.pubDate).format('DD/MM/YYYY, HH:mm:ss')}</Text>
+                                {/* <Text style={styles.pubDate}>{item.pubDate}</Text> */}
+                                {/* <Text style={styles.pubDate}>{moment(item.pubDate).format('DD/MM/YYYY')}</Text> */}
+                                {/* <Text style={styles.pubDate}>{moment(item.pubDate).format('LLLL')}</Text> */}
+                            </View>
+                            <TouchableOpacity onPress={() => { deleteItem(item.title) }}>
+                                <EvilIcons style={styles.icon} name="trash" />
+                            </TouchableOpacity>
+                        </View> 
                     );
                 }}
             />
@@ -59,13 +70,22 @@ const ShowFeedScreen = ({ route, navigation }) => {
 
 //altere os estilos como desejar para melhorar o layout
 const styles = StyleSheet.create({
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-evenly',
+        maxWidth: '95%',
+        borderColor: 'blue',
+        marginStart: 10,
+        borderBottomWidth: 1,
+    },
     row: {
         flexDirection: 'column',
         justifyContent: 'space-between',
+        maxWidth: '75%',
         paddingVertical: 20,
         paddingHorizontal: 10,
-        borderBottomWidth: 1,
-        borderColor: 'gray'
+        marginRight: 25,
     },
     title: {
         fontSize: 14,
@@ -88,7 +108,7 @@ const styles = StyleSheet.create({
         fontStyle: 'italic'
     },
     icon: {
-        fontSize: 24
+        fontSize: 30,
     }
 });
 

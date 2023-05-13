@@ -1,63 +1,86 @@
 import createDataContext from './createDataContext';
 import { XMLParser } from 'fast-xml-parser';
 import rssfeed from '../api/rssfeed';
+import moment from 'moment';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const saveNews = async (news) => {
+    try {
+        await AsyncStorage.setItem('news', JSON.stringify(news));
+    } catch (error) {
+        console.log(error);
+    }
+}
 
-// const saveFeeds = async (feeds) => {
-//     try {
-//         await AsyncStorage.setItem('feeds', JSON.stringify(posts))
-//     } catch (error) {
-//         console.log(error);
-//     }
-// }
-
-// const clearStorage = async () => {
-//     try {
-//         // await AsyncStorage.clear();
-//         await AsyncStorage.removeItem('feeds');
-//         alert('Limpou feeds salvos');
-//     } catch (error) {
-//         console.log(error);
-//         alert('Falha ao limpar feeds');
-//     }
-// }
+const clearStorage = async () => {
+    try {
+        // await AsyncStorage.clear();
+        const confirm = confirm("Apagar todas as noticias ?") 
+        (confirm) ? await AsyncStorage.removeItem('news'): console.log('Ação de apagar todas as noticias cancelada');
+    } catch (error) {
+        console.log(error);
+        alert('Falha ao limpar feeds');
+    }
+}
 
 const feedReducer = (state, action) => {
     let newState = [];
     switch (action.type) {
         case 'fetch_items':
-            //console.log('implementar fetch_items');
+            //console.log('implementar fetch_items - FeedContext');
             newState = action.payload;
-            //console.log('newState', newState);
             return newState;
+        
         case 'add_item':
-            console.log('implementar');
-            return state;
+            //console.log('implementar add_item - FeedContext');
+            newState = [
+                ...state,
+                {
+                    title: action.payload.title,
+                    urlFeed: action.payload.urlFeed,
+                    pubDate: moment(),
+                }
+            ]
+            saveNews(newState);
+            console.log(newState);
+            return newState;
+        
         case 'delete_item':
-            console.log('implementar');
-            return state;
+            //console.log('implementar delete_item - FeedContext');
+            newState = state.filter((news) => news.title !== action.payload.title);
+            saveNews(newState);
+            return newState;
+        
         case 'restore_state':
-            console.log('implementar');
+            //console.log('implementar restore_state - FeedContext');
+            // state = action.payload.savedNews.filter((news) => news.urlFeed === action.payload.feedURL);
+            newState =  [...state, action.payload.savedNews];
             return state;
+        
         case 'delete_all':
-            console.log('implementar');
+            console.log('implementar delete_all- FeedContext');
             return state;
+        
         default:
             return state;
     }
 };
 
 const addItem = dispatch => {
-    return (titulo, urlFeed, callback) => {
-        console.log('implementar');
+    // console.log('addItem - FeedContext');
+    return (title, urlFeed, callback) => {
+        dispatch({ type: 'add_item', payload: { title, urlFeed } });
+        if(callback) {
+            callback();
+        }
     };
 };
 
 const deleteItem = dispatch => {
-    return (id) => {
-        console.log('implementar');
+    //console.log('deleteItem - FeedContext');
+    return (title) => {
+        dispatch({ type: 'delete_item', payload: { title } });
     };
 };
 
@@ -69,32 +92,22 @@ const fetchItems = dispatch => async (feedURL) => {
     const data = response.data;
     let feed = await parser.parse(response.data);
     
-    //mode no-cors do fetch não permite a leitura da resposta
-    //fetch(feedURL, {mode: 'no-cors'}).then(res => res.json()).then(res => console.log(res));
-
     //console.log(feed.rss.channel.language);//linguagem do RSS feed
     //console.log(feed.rss.channel.title);//linguagem do RSS feed
     //console.log(feed.rss.channel.description);//linguagem do RSS feed
     //console.log(feed.rss.channel.item);//todos os itens do feed - notícias
-    
-    //console.log(feed.rss.channel.item[0].title);//todos os itens do feed - notícias
 
     let items = feed.rss.channel.item;
-    
-    // items.forEach((currentValue, index) => {
-    //     console.log('Foreach', currentValue.title, index)
-    // });
-    
-    const retornoMap = await items.map((itemAtual, i) => {
+    //console.log(items);
+    const retornoMap = items.map((itemAtual, i) => {
         return {
             title: itemAtual.title,
             pubDate: itemAtual.pubDate,
             description: itemAtual.description,
             //image: image,
             link: itemAtual.link,
-        }
+        };
     });
-    // console.log(retornoMap);
 
     if (!retornoMap) {
         console.log('nada foi salvo ainda...');
@@ -102,13 +115,19 @@ const fetchItems = dispatch => async (feedURL) => {
     else { 
         dispatch({type:'fetch_items', payload: retornoMap});
     }
-
-    //console.log('implementar');
 };
 
-const restoreState = dispatch => async () => {
-    return () => {
-        console.log('implementar');
+const restoreState = dispatch => async (feedURL) => {
+    //console.log('restoreState - FeedContext', feedURL);
+    try {
+        const savedNews = await AsyncStorage.getItem('news');
+        if(!savedNews) {
+            console.log('nada foi salvo ainda ...');
+        }else {
+            dispatch({type: 'restore_state', payload: {savedNews: JSON.parse(savedNews), feedURL }});
+        }
+    } catch (error) {
+        console.log(error);
     }
 }
 

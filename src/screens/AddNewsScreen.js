@@ -2,17 +2,18 @@ import React, { useState, useEffect, useContext  } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Button} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
-import { Context } from '../context/FeedListContext';
-import FeedForm from '../components/FeedForm';
+import { Context } from '../context/FeedContext';
+import NewsForm from '../components/NewsForm';
 
-const AddFeedScreen = ({ navigation }) => {
+const AddNewsScreen = ({ navigation, route }) => {
 
-    const { addFeed } = useContext(Context);
+    const { addItem } = useContext(Context);
 
+    <Text>{route.params.id}</Text>
     return (
-        <FeedForm 
+        <NewsForm 
             onSubmit={(title,urlFeed) => {
-                addFeed(title, urlFeed, ()=>navigation.navigate('Index'))
+                addItem(title, urlFeed, ()=>navigation.pop());
             }}
         />
     );
@@ -22,4 +23,4 @@ const AddFeedScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({});
 
-export default AddFeedScreen;
+export default AddNewsScreen;
